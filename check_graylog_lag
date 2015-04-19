@@ -79,7 +79,7 @@ def main():
                       help='return warning if lag is outside RANGE')
     argp.add_argument('-c', '--critical', metavar='RANGE', default='0:600',
                       help='return critical if lag is outside RANGE')
-    argp.add_argument('-H', '--horizont', metavar='seconds', type=int, default=3600,
+    argp.add_argument('-H', '--horizont', '--horizon', metavar='seconds', type=int, default=3600,
                       help='How far back to search for messages')
     argp.add_argument('-g', '--graylog', metavar='hostname', default=HOSTNAME,
                       help='graylog hostname to check')
