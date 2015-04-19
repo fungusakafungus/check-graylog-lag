@@ -5,14 +5,15 @@ Check graylog lag (and general availability), by searching for recent messages a
 timestamp of latest message.
 """
 
-import requests
-import nagiosplugin
-import dateutil.parser
 import datetime
 import sys
 import socket
 import argparse
 import logging
+
+import requests
+import nagiosplugin
+import dateutil.parser
 
 HOSTNAME = socket.gethostname()
 SEARCH_URL_TEMPLATE = 'http://%s:12900/search/universal/relative?query=*&range=%i&limit=1' #  noqa
@@ -38,6 +39,8 @@ class Graylog(nagiosplugin.Resource):
             auth=self.auth,
             headers={'Accept': 'application/json'},
         )
+        _log.info('Response status code: %s', r.status_code)
+        _log.info('Response content: %s', r.content)
         r.raise_for_status()
         r.encoding = 'utf-8'
         messages = r.json()['messages']
