@@ -1,0 +1,5 @@
+check-graylog-lag (1.0.1-1) unstable; urgency=low
+
+  * source package automatically created by stdeb 0.6.0+git
+
+ -- Ilya Margolin <ilya@jimdo.com>  Sun, 19 Apr 2015 20:37:31 +0200

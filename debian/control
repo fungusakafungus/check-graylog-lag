@@ -1,0 +1,17 @@
+Source: check-graylog-lag
+Maintainer: Ilya Margolin <ilya@jimdo.com>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7.4.3)
+Standards-Version: 3.9.1
+
+Package: check-graylog-lag
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Description: Nagios plugin to check graylog lag
+ # check-graylog-lag
+ Nagios plugin to check graylog lag
+ .
+ Checks graylog lag (and general availability), by searching for recent messages and inspecting the
+ timestamp of latest message.
+ .
