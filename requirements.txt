@@ -1,0 +1,4 @@
+requests
+nagiosplugin
+python-dateutil
+argparse
