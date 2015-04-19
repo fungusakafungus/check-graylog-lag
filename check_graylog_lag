@@ -1,66 +1,86 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
-Check graylog lag, ffs
+Check graylog lag (and general availability), by searching for recent messages and inspecting the
+timestamp of latest message.
 """
 
 import requests
+import nagiosplugin
 import dateutil.parser
 import datetime
 import sys
 import socket
 import argparse
+import logging
 
 HOSTNAME = socket.gethostname()
-HOSTNAME = 'localhost'
-GRAYLOG_URL = 'http://%s:12900/search/universal/relative?query=*&range=3600&limit=1' % HOSTNAME #  noqa
-
-
-def get_lag():
-    r = requests.get(
-        GRAYLOG_URL,
-        auth=('jimdodev', 'jimdodev'),
-        headers={'Accept': 'application/json'},
-    )
-    r.raise_for_status()
-    r.encoding = 'utf-8'
-    messages = r.json()['messages']
-    if not messages:
-        return 3600
-    ts = messages[0]['message']['timestamp']
-    parsed_ts = dateutil.parser.parse(ts)
-    now_tz = datetime.datetime.now(parsed_ts.tzinfo)
-
-    lag = int((now_tz - parsed_ts).total_seconds())
-
-    return lag
-
-
-import nagiosplugin
+SEARCH_URL_TEMPLATE = 'http://%s:12900/search/universal/relative?query=*&range=%i&limit=1' #  noqa
+_log = logging.getLogger('nagiosplugin')
 
 
 class Graylog(nagiosplugin.Resource):
 
+    def __init__(self):
+        self.horizont = None
+        self.graylog = None
+        self.auth = None
+
     def probe(self):
-        return [nagiosplugin.Metric('lag', get_lag(), 's', context='lag')]
+        return [nagiosplugin.Metric('lag', self.get_lag(), 's', context='lag')]
+
+    def get_lag(self):
+        search_url = SEARCH_URL_TEMPLATE % (self.graylog, self.horizont)
+        _log.info('GET %s', search_url)
+        _log.info('	with auth: %s', self.auth)
+        r = requests.get(
+            search_url,
+            auth=self.auth,
+            headers={'Accept': 'application/json'},
+        )
+        r.raise_for_status()
+        r.encoding = 'utf-8'
+        messages = r.json()['messages']
+        if not messages:
+            _log.warn('no messages found (searched in last %s seconds)', self.horizont)
+            return self.horizont
+        ts = messages[0]['message']['timestamp']
+        parsed_ts = dateutil.parser.parse(ts)
+        now_tz = datetime.datetime.now(parsed_ts.tzinfo)
+
+        lag = int((now_tz - parsed_ts).total_seconds())
+
+        return lag
 
 
 @nagiosplugin.guarded
 def main():
-    argp = argparse.ArgumentParser(description=__doc__)
+    argp = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     argp.add_argument('-w', '--warning', metavar='RANGE', default='0:300',
                       help='return warning if lag is outside RANGE')
     argp.add_argument('-c', '--critical', metavar='RANGE', default='0:600',
                       help='return critical if lag is outside RANGE')
+    argp.add_argument('-H', '--horizont', metavar='seconds', type=int, default=3600,
+                      help='How far back to search for messages')
+    argp.add_argument('-g', '--graylog', metavar='hostname', default=HOSTNAME,
+                      help='graylog hostname to check')
+    argp.add_argument('-a', '--auth', default=None,
+                      help='username:password, basic auth')
     argp.add_argument('-v', '--verbose', action='count', default=0,
                       help='increase output verbosity (use up to 3 times)')
     args = argp.parse_args()
+
+    resource = Graylog()
+    resource.graylog = args.graylog
+    resource.horizont = args.horizont
+    if args.auth:
+        resource.auth = tuple(args.auth.split(':'))
+
     check = nagiosplugin.Check(
-        Graylog(),
+        resource,
         nagiosplugin.ScalarContext('lag', args.warning, args.critical),
         )
     check.main(verbose=args.verbose)
-
 
 
 if __name__ == '__main__':
