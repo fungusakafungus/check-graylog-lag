@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import requests
+import dateutil.parser
+import datetime
+import sys
+import socket
+
+
+try:
+    hostname = socket.gethostname()
+    r = requests.get(
+        'http://%s:12900/search/universal/relative?query=*&range=3600&limit=1' % hostname, #  noqa
+        auth=('jimdodev', 'jimdodev'),
+        headers={'Accept': 'application/json'},
+    )
+    r.raise_for_status()
+    r.encoding = 'utf-8'
+    messages = r.json['messages']
+    if not messages:
+        print 'CRITICAL: lag is more than 3600 seconds'
+        sys.exit(2)
+    ts = messages[0]['message']['timestamp']
+    parsed_ts = dateutil.parser.parse(ts)
+    now_tz = datetime.datetime.now(parsed_ts.tzinfo)
+
+    lag = (now_tz - parsed_ts).total_seconds()
+
+    if lag > 600:
+        print 'CRITICAL: lag is more than 600 seconds: %i' % int(lag)
+        sys.exit(2)
+    if lag > 300:
+        print 'WARNING: lag is more than 300 seconds: %i' % int(lag)
+        sys.exit(1)
+except SystemExit: # re-raise after sys.exit
+    raise
+except:
+    import traceback
+    print 'CRITICAL: Exception'
+    traceback.print_exc()
+    sys.exit(2)
+
+print 'OK: lag is less than 300 seconds: %i' % int(lag)
+sys.exit(0)
