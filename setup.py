@@ -3,9 +3,9 @@
 from setuptools import setup
 
 setup(name='check-graylog-lag',
-      version='1.0.1',
+      version='1.0.2',
       description='Nagios plugin to check graylog lag',
-      long_description=open('README.md').read(),
+      long_description=open('README.rst').read(),
       author='Ilya Margolin',
       author_email='ilya@jimdo.com',
       url='https://github.com/fungusakafungus/check-graylog-lag',
