@@ -17,4 +17,6 @@ setup(name='check-graylog-lag',
           'Operating System :: OS Independent',
           'Programming Language :: Python',
       ],
+      test_suite='tests.Test',
+      tests_require=['bottle'],
       )

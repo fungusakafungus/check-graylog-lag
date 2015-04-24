@@ -59,7 +59,11 @@ class Graylog(nagiosplugin.Resource):
         _log.info('Response content: %s', r.content)
         r.raise_for_status()
         r.encoding = 'utf-8'
-        messages = r.json()['messages']
+        try:
+            json = r.json()
+        except TypeError: # requests < 1.0.0 compatibility
+            json = r.json
+        messages = json['messages']
         if not messages:
             _log.warn('no messages found (searched in last %s seconds)', self.horizont)
             return self.horizont
@@ -79,7 +83,7 @@ def main():
                       help='return warning if lag is outside RANGE')
     argp.add_argument('-c', '--critical', metavar='RANGE', default='0:600',
                       help='return critical if lag is outside RANGE')
-    argp.add_argument('-H', '--horizont', metavar='seconds', type=int, default=3600,
+    argp.add_argument('-H', '--horizont', '--horizon', metavar='seconds', type=int, default=3600,
                       help='How far back to search for messages')
     argp.add_argument('-g', '--graylog', metavar='hostname', default=HOSTNAME,
                       help='graylog hostname to check')
