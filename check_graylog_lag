@@ -70,8 +70,10 @@ class Graylog(nagiosplugin.Resource):
         ts = messages[0]['message']['timestamp']
         parsed_ts = dateutil.parser.parse(ts)
         now_tz = datetime.datetime.now(parsed_ts.tzinfo)
-
-        lag = int((now_tz - parsed_ts).total_seconds())
+        td = (now_tz - parsed_ts)
+        # total_seconds python 2.6 compatibility
+        total_seconds = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+        lag = int(total_seconds)
 
         return lag
 
