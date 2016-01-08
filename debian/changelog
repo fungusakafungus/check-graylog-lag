@@ -1,4 +1,4 @@
-check-graylog-lag (1.0.2-1) UNRELEASED; urgency=low
+check-graylog-lag (1.0.2-1) github; urgency=low
 
   * Fix me being so german
   * wheezy/python-requests 0.12 compatibility and tests
