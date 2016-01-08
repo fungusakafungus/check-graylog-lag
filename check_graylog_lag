@@ -70,7 +70,7 @@ class Graylog(nagiosplugin.Resource):
         except IOError, e:
             if self.connection_errors_are_critical:
                 self.connection_error = e
-                return 0
+                return float('inf')
             else:
                 raise
 
@@ -95,6 +95,7 @@ class Graylog(nagiosplugin.Resource):
         lag = int(total_seconds)
 
         return lag
+
 
 @nagiosplugin.guarded
 def main():
@@ -129,7 +130,7 @@ def main():
         resource,
         ConnectionContext('lag', args.warning, args.critical)
     )
-    check.main(verbose=args.verbose, timeout=args.timeout+1)
+    check.main(verbose=args.verbose)
 
 
 if __name__ == '__main__':
