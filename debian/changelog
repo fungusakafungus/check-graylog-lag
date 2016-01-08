@@ -1,3 +1,11 @@
+check-graylog-lag (1.1.0-1) github; urgency=medium
+
+  * Create LICENSE.md
+  * Implement --connection-errors-are-critical
+  * Implement --timeout
+
+ -- Ilya Margolin <ilya@jimdo.com>  Fri, 08 Jan 2016 17:14:54 +0100
+
 check-graylog-lag (1.0.2-1) github; urgency=low
 
   * Fix me being so german
