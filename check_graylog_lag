@@ -26,14 +26,13 @@ import sys
 import socket
 import argparse
 import logging
-
 import requests
 import nagiosplugin
 import dateutil.parser
 from nagiosplugin.state import Critical
 
 HOSTNAME = socket.gethostname()
-SEARCH_URL_TEMPLATE = 'http://%s:12900/search/universal/relative?query=*&range=%i&limit=1' #  noqa
+SEARCH_URL_TEMPLATE = 'http://%s:12900/search/universal/relative?query=*&range=%i&limit=1'  # noqa
 _log = logging.getLogger('nagiosplugin')
 
 
@@ -81,7 +80,7 @@ class Graylog(nagiosplugin.Resource):
         r.encoding = 'utf-8'
         try:
             json = r.json()
-        except TypeError: # requests < 1.0.0 compatibility
+        except TypeError:  # requests < 1.0.0 compatibility
             json = r.json
         messages = json['messages']
         if not messages:
@@ -92,11 +91,10 @@ class Graylog(nagiosplugin.Resource):
         now_tz = datetime.datetime.now(parsed_ts.tzinfo)
         td = (now_tz - parsed_ts)
         # total_seconds python 2.6 compatibility
-        total_seconds = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+        total_seconds = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6) / 10 ** 6
         lag = int(total_seconds)
 
         return lag
-
 
 @nagiosplugin.guarded
 def main():
@@ -136,4 +134,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

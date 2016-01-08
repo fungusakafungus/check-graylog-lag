@@ -6,7 +6,6 @@ import threading
 import os
 import socket
 
-
 response = None
 sleep_seconds = 0
 
@@ -16,6 +15,7 @@ def get():
     import time
     time.sleep(sleep_seconds)
     return response
+
 
 t = threading.Thread(
     target=bottle.run,
