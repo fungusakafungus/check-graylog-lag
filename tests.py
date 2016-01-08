@@ -6,13 +6,16 @@ import threading
 import os
 import socket
 
-
 response = None
+sleep_seconds = 0
 
 
 @bottle.route('/search/universal/relative')
 def get():
+    import time
+    time.sleep(sleep_seconds)
     return response
+
 
 t = threading.Thread(
     target=bottle.run,
@@ -54,3 +57,21 @@ class Test(TestCase):
         global response
         response = '%&!'
         assert os.system('./check_graylog_lag') >> 8 == 3
+
+    def test_connection_refused_CRITICAL(self):
+        exit_code = os.system('./check_graylog_lag -g example.com -t 1 --connection-errors-are-critical') >> 8
+        assert exit_code == 2
+
+    def test_connection_refused_UNKNOWN(self):
+        exit_code = os.system('./check_graylog_lag -g example.com -t 1') >> 8
+        assert exit_code == 3
+
+    def test_timeout_CRITICAL(self):
+        global sleep_seconds
+        sleep_seconds = 2
+        assert os.system('./check_graylog_lag -t 1 --connection-errors-are-critical') >> 8 == 2
+
+    def test_timeout_UNKNOWN(self):
+        global sleep_seconds
+        sleep_seconds = 2
+        assert os.system('./check_graylog_lag -t 1') >> 8 == 3

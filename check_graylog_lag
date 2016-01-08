@@ -26,22 +26,32 @@ import sys
 import socket
 import argparse
 import logging
-
 import requests
 import nagiosplugin
 import dateutil.parser
+from nagiosplugin.state import Critical
 
 HOSTNAME = socket.gethostname()
-SEARCH_URL_TEMPLATE = 'http://%s:12900/search/universal/relative?query=*&range=%i&limit=1' #  noqa
+SEARCH_URL_TEMPLATE = 'http://%s:12900/search/universal/relative?query=*&range=%i&limit=1'  # noqa
 _log = logging.getLogger('nagiosplugin')
 
 
-class Graylog(nagiosplugin.Resource):
+class ConnectionContext(nagiosplugin.context.ScalarContext):
+    def evaluate(self, metric, resource):
+        if resource.connection_error:
+            return nagiosplugin.result.Result(Critical, str(resource.connection_error.message))
+        else:
+            return super(ConnectionContext, self).evaluate(metric, resource)
 
+
+class Graylog(nagiosplugin.Resource):
     def __init__(self):
         self.horizont = None
         self.graylog = None
         self.auth = None
+        self.connection_error = None
+        self.timeout = None
+        self.connection_errors_are_critical = None
 
     def probe(self):
         return [nagiosplugin.Metric('lag', self.get_lag(), 's', context='lag')]
@@ -50,18 +60,27 @@ class Graylog(nagiosplugin.Resource):
         search_url = SEARCH_URL_TEMPLATE % (self.graylog, self.horizont)
         _log.info('GET %s', search_url)
         _log.info('	with auth: %s', self.auth)
-        r = requests.get(
-            search_url,
-            auth=self.auth,
-            headers={'Accept': 'application/json'},
-        )
+        try:
+            r = requests.get(
+                search_url,
+                auth=self.auth,
+                headers={'Accept': 'application/json'},
+                timeout=self.timeout
+            )
+        except IOError, e:
+            if self.connection_errors_are_critical:
+                self.connection_error = e
+                return float('inf')
+            else:
+                raise
+
         _log.info('Response status code: %s', r.status_code)
         _log.info('Response content: %s', r.content)
         r.raise_for_status()
         r.encoding = 'utf-8'
         try:
             json = r.json()
-        except TypeError: # requests < 1.0.0 compatibility
+        except TypeError:  # requests < 1.0.0 compatibility
             json = r.json
         messages = json['messages']
         if not messages:
@@ -72,7 +91,7 @@ class Graylog(nagiosplugin.Resource):
         now_tz = datetime.datetime.now(parsed_ts.tzinfo)
         td = (now_tz - parsed_ts)
         # total_seconds python 2.6 compatibility
-        total_seconds = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+        total_seconds = (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6) / 10 ** 6
         lag = int(total_seconds)
 
         return lag
@@ -93,21 +112,26 @@ def main():
                       help='username:password, basic auth')
     argp.add_argument('-v', '--verbose', action='count', default=0,
                       help='increase output verbosity (use up to 3 times)')
+    argp.add_argument('--connection-errors-are-critical', action='count', default=0,
+                      help='Return CRITICAL for timeouts and connection errors')
+    argp.add_argument('-t', '--timeout', type=float, metavar='seconds', default=10,
+                      help='Connection timeout')
     args = argp.parse_args()
 
     resource = Graylog()
     resource.graylog = args.graylog
     resource.horizont = args.horizont
+    resource.timeout = args.timeout
+    resource.connection_errors_are_critical = args.connection_errors_are_critical
     if args.auth:
         resource.auth = tuple(args.auth.split(':'))
 
     check = nagiosplugin.Check(
         resource,
-        nagiosplugin.ScalarContext('lag', args.warning, args.critical),
-        )
+        ConnectionContext('lag', args.warning, args.critical)
+    )
     check.main(verbose=args.verbose)
 
 
 if __name__ == '__main__':
     main()
-

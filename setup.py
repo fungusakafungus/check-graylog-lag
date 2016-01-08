@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='check-graylog-lag',
-      version='1.0.2',
+      version='1.1.0',
       description='Nagios plugin to check graylog lag',
       long_description=open('README.rst').read(),
       author='Ilya Margolin',
