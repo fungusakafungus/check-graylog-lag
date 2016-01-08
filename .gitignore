@@ -1,0 +1,7 @@
+*.pyc
+.idea/
+*.iml
+.*.sw[op]
+tags
+dist/
+.cache/
